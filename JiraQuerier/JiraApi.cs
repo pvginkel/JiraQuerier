@@ -6,6 +6,8 @@ using System.IO;
 using System.Net;
 using System.Text;
 using Jint.Native;
+using Jint.Native.Object;
+using JintDebugger;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -194,7 +196,7 @@ namespace JiraQuerier
         //    );
         //}
 
-        public string Request(string url, JsDictionaryObject parameters, string payload)
+        public string Request(string url, ObjectInstance parameters, string payload)
         {
             Dictionary<string, string> dictionary = null;
 
@@ -202,12 +204,9 @@ namespace JiraQuerier
             {
                 dictionary = new Dictionary<string, string>();
 
-                foreach (var parameter in parameters)
+                foreach (var parameter in parameters.GetOwnProperties())
                 {
-                    dictionary[parameter.Key] =
-                        parameter.Value == null
-                        ? null
-                        : parameter.Value.ToString();
+                    dictionary[parameter.Key] = parameter.Value?.ToString();
                 }
             }
 
@@ -280,7 +279,7 @@ namespace JiraQuerier
             }
             catch (WebException ex)
             {
-                if (ex.Response == null)
+                if (ex.Response == null || ((HttpWebResponse)ex.Response).StatusCode == HttpStatusCode.Forbidden)
                     throw;
 
                 using (var stream = ex.Response.GetResponseStream())

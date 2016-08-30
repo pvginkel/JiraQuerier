@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Net;
 using System.Text;
 using System.Windows.Forms;
+using JintDebugger;
 
 namespace JiraQuerier
 {
@@ -27,6 +29,9 @@ namespace JiraQuerier
             {
                 _userName.Text = (string)key.GetValue("User name");
                 _site.Text = (string)key.GetValue("Site");
+#if DEBUG
+                _password.Text = (string)key.GetValue("Password");
+#endif
             }
         }
 
@@ -44,17 +49,25 @@ namespace JiraQuerier
                 {
                     key.SetValue("User name", _userName.Text);
                     key.SetValue("Site", _site.Text);
+#if DEBUG
+                    key.SetValue("Password", _password.Text);
+#endif
                 }
 
                 DialogResult = DialogResult.OK;
             }
             catch (Exception ex)
             {
+                string message;
+
+                if ((ex as WebException)?.Response != null && ((HttpWebResponse)((WebException)ex).Response).StatusCode == HttpStatusCode.Forbidden)
+                    message = "Invalid user name or password";
+                else
+                    message = "Could not connect to JIRA" + Environment.NewLine + Environment.NewLine + ex.Message + " (" + ex.GetType().FullName + ")";
+
                 MessageBox.Show(
                     this,
-                    "Invalid user name or password" + Environment.NewLine +
-                    Environment.NewLine +
-                    ex.Message + " (" + ex.GetType().FullName + ")",
+                    message,
                     Text,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
@@ -68,7 +81,6 @@ namespace JiraQuerier
                 _password.Focus();
 
 #if DEBUG
-            _password.Text = "UqcZ}y8H";
             _acceptButton.PerformClick();
 #endif
         }
